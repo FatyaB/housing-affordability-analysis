@@ -4,27 +4,87 @@ author: "Fatima Baghirova"
 date: "2025-10-09"
 output: html_document
 ---
+#**1. Introduction: Motivation and Problem statement**
+This project investigates the disparity between rental costs and local income levels across 5 major European capitals. My goal was to identify the city with the most and least favorable rent-to-income ratio, which provides a clearer picture of the quality of life that the corresponding city provides for the young working professionals.
+As a working student with years of experience renting in several European cities under my belt, I find it increasingly challenging to navigate the housing space. I have also been noticing that my peers and I spend larger and larger shares of our income on rent, with salaries falling farther behind skyrocketing housing prices every passing year. 
+So, I couldn't help but wonder:
+*"Which of the chosen European cities has the most favorable rent-to-income ratio?"* 
+This is the question I set out to answer in this project. The cities I have chosen are not random either. I studied and worked in Budapest for 5 years. Currently, I live in Poland, but I am already planning my next long-term destination. Therefore, I decided to pick the cities that I always thought would be a good idea to look into: Berlin, Madrid, Lisbon and Warsaw.
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+#**2. Data Collection and Preparation** 
+For my sources, I opted to use Eurostat: [Income of households by NUTS 2 region - nama_10r_2hhinc](https://ec.europa.eu/eurostat/databrowser/view/nama_10r_2hhinc__custom_18128743/default/table) as well as the [2022 Current Market Rents Report.](https://ec.europa.eu/eurostat/documents/6939681/7243182/Booklet_2023_rents_2022_e_MockUp.pdf/134be7c5-9cbe-5ee1-7261-f0e78d225deb?t=1675088506819)
+Having reviewed my literature, I identified the **key variables** for my analysis:
+- Monthly Net Income (EUR)
+- Monthly rent (EUR)
+I then compiled the data found in the aforementioned sources into a single spreadsheet (*Housing Affordability Data Collection.xlsx*) to align the cities with the corresponding metrics before importing into R.
+```{r}
+housing_data <- read_excel("Housing Affordability Data Collection.xlsx")
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+#**3. Data Transformation**
+Upon realizing some inconsistencies with the column names and messy, long city names I changed them to establish consistency and clarity in my data, and to avoid tangled text and wasting space in my visualization:
+```{r}
+# Renaming columns to standardized, clean names.
+housing_data_stacked <- housing_data %>%
+  rename(Rent_Amount = Rent_1_Amount,
+         Source_Rent = Source_Rent_1,
+         rent_to_income_ratio = `Rent to Income ratio`) %>% 
+# Cleaning city names  
+  mutate(City =case_when(City == "Grande Lisboa" ~ "Lisbon",
+                         City == "Comunidad de Madrid" ~ "Madrid",
+                         City == "Warszawski stoĹeczny" ~ "Warsaw",TRUE ~ City))
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+#**4. Methodology**
+In order to figure out how affordable rent really is in these cities, I had to find out, what share of the monthly income is taken up by the cost of rent and how much of one's income remains after rent is paid. Hence the column "rent_to_income_ratio" (rent/income) which I've already calculated in the excel file while preparing the dataset. Consequently, I calculated the "Disposable Income" so that we can see how much of the income remains after rent is paid and can effectively visualize their respective shares on the total monthly income. 
+```{r}
+# Calculating the Disposable Income
+housing_data_stacked <- housing_data_stacked %>%
+  mutate(Disposable_Income = Monthly_Net_Income_EUR-Rent_Amount)
 ```
+#**5. Structuring the data for plotting**
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Then I transformed the dataset from wide to long in order to plot the stacked bar chart, such that the Rent amount and Disposable income stack properly, per given city, on our chart.  
+```{r}
+#Transforming wide data to long
+housing_data_long_stacked <- housing_data_stacked %>%
+  pivot_longer(
+    cols = c(Disposable_Income,Rent_Amount),
+    names_to = 'Metrics',
+    values_to = 'Amount_EUR'
+  ) %>% 
+#Setting the factor levels to have disposable income lay on the bottom of each bar:
+ %>% mutate(Metrics = factor(Metrics, levels = c("Disposable_Income", "Rent_Amount")))
+```
+#** 6. Visualization and Key findings**
+
+Finally I plotted the data using the difference bar chart. The resulting chart clearly shows the shares of the disposable income as well as rent as part of the monthly net income in each of the selected cities. 
+```{r}
+housing_plot <- ggplot(data = housing_data_long_stacked)+
+  geom_col(mapping = aes(x=City,y=Amount_EUR,fill=Metrics))+
+  geom_text(data = housing_data_stacked, aes(x = City, y = Monthly_Net_Income_EUR + 150, 
+                                             label = paste0(round(rent_to_income_ratio * 100, 0), "%")),
+            color = "black",
+            fontface = "bold",
+            size = 4
+  ) + 
+  # Defining labels
+  labs(title = "Rental Affordability in 5 Major EU capitals: Rent as % of Monthly Net Income",
+       subtitle = "The bar height shows Total Monthly Net Income. The red segment stands for Monthly Rent.",
+       x = "City",
+       y = "Monthly Amount (€)",
+       fill = "Share of Income",
+       caption = "Data Sources:\n 1. Eurostat - Income of households by NUTS 2 region\n 2. Eurostat - 2022 Current Market Rents") +
+  scale_fill_manual(
+    labels = c("Disposable Income","Monthly Rent"),
+    values = c("Disposable_Income"="#A8DADC", "Rent_Amount"="red")) +
+  # Adding extra space in the plot for labels 
+  scale_y_continuous(expand = expansion(mult =c(0, 0.15)))+ 
+  theme_minimal()+
+  theme(plot.caption = element_text(hjust = 0, size = 8))
+housing_plot
+```
+## Key Findings
+Based on this investigation I can deduce the following: 
+- The city with the highest rent to income ratio is Lisbon, where, evidently, shocking %76 of monthly income is spent on rent. 
+- The most 
+# Conclusion
