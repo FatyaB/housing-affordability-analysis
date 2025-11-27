@@ -1,0 +1,136 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\newsavebox\pandoc@box
+\newcommand*\pandocbounded[1]{% scales image to fit in text height/width
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi% select the smaller of both
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi%
+}
+% Set default figure placement to htbp
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={README},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{README}
+\author{}
+\date{\vspace{-2.5em}}
+
+\begin{document}
+\maketitle
+
+\section{\texorpdfstring{\textbf{Rental Affordability Analysis: A
+Comparison of Five European Capital Cities
+(2022)}}{Rental Affordability Analysis: A Comparison of Five European Capital Cities (2022)}}\label{rental-affordability-analysis-a-comparison-of-five-european-capital-cities-2022}
+
+\subsection{Project Goal}\label{project-goal}
+
+This analysis investigates the rental affordability crisis across five
+major European capital cities by calculating the Rent-to-Income Ratio
+for an average single-person household. The goal is to determine which
+city presents the most economically sensible option for a working
+professional based on housing costs versus net monthly income.
+
+\textbf{Key Insights \& Findings}
+
+\textbf{The Outlier:} \emph{Lisbon} stands as the definitive
+affordability outlier, consuming a shocking 76\% of the average monthly
+net income for a 1-bedroom apartment.
+
+\textbf{Most Favorable:} \emph{Madrid} and \emph{Berlin} showed the most
+favorable affordability, requiring approximately 46-47\% of net income,
+establishing them as the best options within the tested sample.
+
+\emph{Income Paradox:} The analysis revealed that higher absolute income
+(e.g., Berlin) does not guarantee proportionally higher affordability
+compared to cities with lower incomes (e.g., Budapest), emphasizing the
+criticality of the Rent-to-Income Ratio.
+
+\emph{Visualization}: The findings are presented using a custom
+Difference Stacked Bar Chart that clearly visualizes the rent burden on
+top of the disposable income base.
+
+\textbf{Data and Methodology}
+
+\emph{Data Sources:} Eurostat (Household Income by NUTS 2 region) and
+Eurostat (Current Market Rents Report). All data is sourced for 2022.
+
+\emph{Metrics Calculated:} Monthly Net Income, Rent-to-Income Ratio, and
+Disposable Income.
+
+Tools: The entire analysis pipeline-from data cleaning and
+transformation (using dplyr) to visualization (using ggplot2)-was
+conducted in R.
+
+\emph{Reproducibility:} The analysis is fully detailed in the
+Rental\_Affordability\_Report.Rmd file.
+
+\textbf{View the Full Report}
+
+The complete, knitted HTML report, including all code, methodology, and
+the final visualization, is available
+\href{https://github.com/FatyaB/housing-affordability-analysis/blob/main/rent_affordability.html}{HERE}.
+
+\textbf{Repository Contents}
+
+Rental\_Affordability\_Report.Rmd: The complete R Markdown source file.
+
+Rental\_Affordability\_Report.html: The final knitted report document
+(Recommended viewing).
+
+Housing Affordability Data Collection.xlsx: The raw input data used for
+the analysis.
+
+\end{document}
