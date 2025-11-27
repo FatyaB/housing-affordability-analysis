@@ -1,27 +1,39 @@
 ---
 title: 'Rental Affordability in 5 Major EU capitals: Rent as % of Monthly Net Income'
 author: "Fatima Baghirova"
-date: "2025-10-09"
+date: "2025-11-22"
 output: html_document
 ---
-#**1. Introduction: Motivation and Problem statement**
-This project investigates the disparity between rental costs and local income levels across 5 major European capitals. My goal was to identify the city with the most and least favorable rent-to-income ratio, which provides a clearer picture of the quality of life that the corresponding city provides for the young working professionals.
+# **1. Introduction: Motivation and Problem statement**
+This project investigates the disparity between rental costs and local income levels across 5 major European capitals. My goal was to identify the city with the most and least favorable rent-to-income ratios, which provides a clearer picture of the quality of life that the corresponding city provides for the young working professionals.
+
 As a working student with years of experience renting in several European cities under my belt, I find it increasingly challenging to navigate the housing space. I have also been noticing that my peers and I spend larger and larger shares of our income on rent, with salaries falling farther behind skyrocketing housing prices every passing year. 
 So, I couldn't help but wonder:
 *"Which of the chosen European cities has the most favorable rent-to-income ratio?"* 
 This is the question I set out to answer in this project. The cities I have chosen are not random either. I studied and worked in Budapest for 5 years. Currently, I live in Poland, but I am already planning my next long-term destination. Therefore, I decided to pick the cities that I always thought would be a good idea to look into: Berlin, Madrid, Lisbon and Warsaw.
 
-#**2. Data Collection and Preparation** 
-For my sources, I opted to use Eurostat: [Income of households by NUTS 2 region - nama_10r_2hhinc](https://ec.europa.eu/eurostat/databrowser/view/nama_10r_2hhinc__custom_18128743/default/table) as well as the [2022 Current Market Rents Report.](https://ec.europa.eu/eurostat/documents/6939681/7243182/Booklet_2023_rents_2022_e_MockUp.pdf/134be7c5-9cbe-5ee1-7261-f0e78d225deb?t=1675088506819)
-Having reviewed my literature, I identified the **key variables** for my analysis:
-- Monthly Net Income (EUR)
-- Monthly rent (EUR)
-I then compiled the data found in the aforementioned sources into a single spreadsheet (*Housing Affordability Data Collection.xlsx*) to align the cities with the corresponding metrics before importing into R.
-```{r}
-housing_data <- read_excel("Housing Affordability Data Collection.xlsx")
-```
+# **2. Data Collection and Preparation** 
+For my data sources, I opted to use Eurostat: [Income of households by NUTS 2 region - nama_10r_2hhinc](https://ec.europa.eu/eurostat/databrowser/view/nama_10r_2hhinc__custom_18128743/default/table), which models the net income of a single person without children, after all mandatory payments have been accounted for (except rent), based on the national average. 
 
-#**3. Data Transformation**
+The data in regards to the rent prices have been gathered from [2022 Current Market Rents Report.](https://ec.europa.eu/eurostat/documents/6939681/7243182/Booklet_2023_rents_2022_e_MockUp.pdf/134be7c5-9cbe-5ee1-7261-f0e78d225deb?t=1675088506819) where I picked the figures specifically for 1-bedroom apartments as the basis for my Monthly Rent metric.
+
+I then compiled the data found in the aforementioned sources into a single spreadsheet (*Housing Affordability Data Collection.xlsx*). 
+The **key metrics** below, as well as the corresponding figures needed for the analysis were identified, calculated and organized in a separate Sheet - "main".  
+- Monthly Net Income (EUR)
+- Monthly Rent (EUR) 
+- Rent-to-income ratio (Monthly Rent/Monthly Net Income)
+
+The resulting data sets was then read into R.
+```{r setup, warning=FALSE, message=FALSE}
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+install.packages("tidyverse")
+library(tidyverse)
+library(readxl)
+library(dplyr)
+housing_data <- read_excel("Housing Affordability Data Collection.xlsx")
+summarize(housing_data)
+```
+# **3. Data Transformation**
 Upon realizing some inconsistencies with the column names and messy, long city names I changed them to establish consistency and clarity in my data, and to avoid tangled text and wasting space in my visualization:
 ```{r}
 # Renaming columns to standardized, clean names.
@@ -34,34 +46,41 @@ housing_data_stacked <- housing_data %>%
                          City == "Comunidad de Madrid" ~ "Madrid",
                          City == "Warszawski stoĹeczny" ~ "Warsaw",TRUE ~ City))
 ```
-#**4. Methodology**
-In order to figure out how affordable rent really is in these cities, I had to find out, what share of the monthly income is taken up by the cost of rent and how much of one's income remains after rent is paid. Hence the column "rent_to_income_ratio" (rent/income) which I've already calculated in the excel file while preparing the dataset. Consequently, I calculated the "Disposable Income" so that we can see how much of the income remains after rent is paid and can effectively visualize their respective shares on the total monthly income. 
+
+# **4. Methodology**
+In order to figure out how affordable rent really is in these cities, I already calculated what share of the monthly income is taken up by the cost of rent (rent-to-income-ratio). In order to make these findings even clearer, it would be helpful to also be able to see how much of one's income remains after the rent is paid. So naturally, I calculated the "Disposable Income" so that we can see how much of the income remains after rent is paid and can effectively visualize their respective shares in the total monthly income. 
 ```{r}
 # Calculating the Disposable Income
 housing_data_stacked <- housing_data_stacked %>%
   mutate(Disposable_Income = Monthly_Net_Income_EUR-Rent_Amount)
 ```
-#**5. Structuring the data for plotting**
 
-Then I transformed the dataset from wide to long in order to plot the stacked bar chart, such that the Rent amount and Disposable income stack properly, per given city, on our chart.  
+# **5. Structuring the data for plotting**
+Then I proceed to sort the cities based on the rent-to-income ratio in the ascending order from left to right - lowest to highest values.  
+```{r}
+housing_data_sorted <- housing_data_stacked %>% 
+  mutate(City = fct_reorder(City, rent_to_income_ratio))
+```
+  
+And continued the structuring process by transforming the data sets from wide to long in order to plot the stacked bar chart, such that the Rent amount and Disposable income stack properly, per given city, on our chart.  
 ```{r}
 #Transforming wide data to long
-housing_data_long_stacked <- housing_data_stacked %>%
+housing_data_long_stacked <- housing_data_sorted %>%
   pivot_longer(
     cols = c(Disposable_Income,Rent_Amount),
     names_to = 'Metrics',
     values_to = 'Amount_EUR'
   ) %>% 
 #Setting the factor levels to have disposable income lay on the bottom of each bar:
- %>% mutate(Metrics = factor(Metrics, levels = c("Disposable_Income", "Rent_Amount")))
+  mutate(Metrics = factor(Metrics, levels = c("Disposable_Income", "Rent_Amount")))
 ```
-#** 6. Visualization and Key findings**
 
-Finally I plotted the data using the difference bar chart. The resulting chart clearly shows the shares of the disposable income as well as rent as part of the monthly net income in each of the selected cities. 
+# **6. Visualization**
+Finally I plotted the data using the difference bar chart. The resulting chart clearly shows our rent-to-income ratios from most to least favorable, as well as the contrasting shares of the disposable incomes in monthly incomes of each city. 
 ```{r}
 housing_plot <- ggplot(data = housing_data_long_stacked)+
   geom_col(mapping = aes(x=City,y=Amount_EUR,fill=Metrics))+
-  geom_text(data = housing_data_stacked, aes(x = City, y = Monthly_Net_Income_EUR + 150, 
+  geom_text(data = housing_data_sorted, aes(x = City, y = Monthly_Net_Income_EUR + 150, 
                                              label = paste0(round(rent_to_income_ratio * 100, 0), "%")),
             color = "black",
             fontface = "bold",
@@ -83,8 +102,42 @@ housing_plot <- ggplot(data = housing_data_long_stacked)+
   theme(plot.caption = element_text(hjust = 0, size = 8))
 housing_plot
 ```
-## Key Findings
-Based on this investigation I can deduce the following: 
-- The city with the highest rent to income ratio is Lisbon, where, evidently, shocking %76 of monthly income is spent on rent. 
-- The most 
-# Conclusion
+
+# **7. Key Findings**
+This investigation has resulted in the following key findings:
+- The most affordable city in terms of rent turns out to be **Madrid***, where the ratio sits at 46%, presenting a reasonable opportunity for single working professionals.
+- **Berlin** is the next best option and is closely followed by **Budapest** where despite the much lower monthly net income of about EUR 1400 (compared to approx. EUR 2500 in the German capital), the rent-to-income-ratio, rounded to 47% from 46.86%, is in fact even slightly higher than that of Berlin's 46.75%.
+ - In **Warsaw** we can observe that nearly half of the monthly income is taken up by rent despite an even lower average monthly net salary than in the preceding capital. 
+ - The city with the highest rent to income ratio is **Lisbon**, where, evidently, shocking **76%** of monthly income is spent on rent, leaving the residents to have to make do with only about EUR 358 of disposable income.  
+It is to be noted that the rent-to-income ratios of all afore-mentioned capitals are within the range of 40%-49% with the obvious anomalous outlier being **Lisbon** with over **75%**.   
+
+# **8. Conclusions and Limitations**
+In conclusion based on the burden of rent of a 1-bedroom apartment on the average monthly income for a single-person household, the most favorable city is, beyond a shadow of a doubt - Madrid closely followed by Berlin.
+
+Budapest and Warsaw are the next best options but I see them as less favorable due to the overall lower monthly net salaries there.
+
+The least favorable city in this regard turned out to be Lisbon which was a unexpected at first and led to a necessary re-check the data as well as the relevant context behind the findings. Upon rechecking the reliability/quality of the data, I've found that there is a currently ongoing housing affordability crisis in Portugal's capital. 
+Apparently, over the last decade (from 2014 to 2024) Portugal has been experiencing a jaw-dropping %176 increase in housing prices which pushed the country to the very top of the housing unaffordability rankings, while only 10 years ago, it was ranked 22nd out of 27 countries in the EU.[Source](https://www.theguardian.com/commentisfree/2025/jun/25/lisbon-europe-portugal-golden-visa-capital-investors-short-term-rentals)
+
+## Limitations
+This analysis has the limitations below:
+
+1. **Need more up to date data on incomes and rent prices**
+The data representing more recent years 2025, 2024, 2023 was incomplete, or non-existent for one or multiple cities in question. Therefore the year with the most complete data was collected and used - 2022. 
+The analysis can be recreated with more up to date information. 
+
+2. **Flags in the "Income of households.." dataset**:
+- Madrid **(p):** The value for Madrid is provisional, i.e. an estimate and may be subject to revision.
+- Berlin **(e):** The value for Berlin is an estimated figure. Similar to provisional data; it's not final and may be based on a different methodology or sample.
+
+# **9. References**
+Data Sources:
+
+    Eurostat, Income of households by NUTS 2 region (nama_10r_2hhinc). Data extracted: 2022. Available at: https://ec.europa.eu/eurostat/databrowser/view/nama_10r_2hhinc__custom_18128743/default/table
+
+    Eurostat, Current Market Rents Report (2022). [PDF Document]. Available at: https://ec.europa.eu/eurostat/documents/6939681/7243182/Booklet_2023_rents_2022_e_MockUp.pdf/134be7c5-9cbe-5ee1-7261-f0e78d225deb?t=1675088506819
+
+External Literature:
+
+    The Guardian. (2025, June 25). Lisbon shows what happens when a city becomes a playground for the rich – and Europe should take note. [Opinion]. Available at: https://www.theguardian.com/commentisfree/2025/jun/25/lisbon-europe-portugal-golden-visa-capital-investors-short-term-rentals
+

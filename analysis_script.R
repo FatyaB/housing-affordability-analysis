@@ -1,3 +1,4 @@
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
 install.packages("tidyverse")
 library(tidyverse)
 library(readxl)
@@ -9,16 +10,18 @@ housing_data_stacked <- housing_data %>%
   rename(Rent_Amount = Rent_1_Amount,
          Source_Rent = Source_Rent_1,
          rent_to_income_ratio = `Rent to Income ratio`) %>% 
-#Clean up city names  
+# Clean up city names  
   mutate(City =case_when(City == "Grande Lisboa" ~ "Lisbon",
                          City == "Comunidad de Madrid" ~ "Madrid",
                          City == "Warszawski stoĹeczny" ~ "Warsaw",TRUE ~ City))
 # Calculating the Disposable Income
 housing_data_stacked <- housing_data_stacked %>%
   mutate(Disposable_Income = Monthly_Net_Income_EUR-Rent_Amount)
-head(housing_data_stacked)
+# Organizing the cities from lowest to highest rent-to-income ratios
+housing_data_sorted <- housing_data_stacked %>% 
+  mutate(City = fct_reorder(City, rent_to_income_ratio))
 # Transforming the data from wide to long
-housing_data_long_stacked <- housing_data_stacked %>%
+housing_data_long_stacked <- housing_data_sorted %>%
   pivot_longer(
     cols = c(Disposable_Income,Rent_Amount),
     names_to = 'Metrics',
@@ -27,7 +30,7 @@ housing_data_long_stacked <- housing_data_stacked %>%
 # Plotting the chart using a difference bar chart:
 housing_plot <- ggplot(data = housing_data_long_stacked)+
   geom_col(mapping = aes(x=City,y=Amount_EUR,fill=Metrics))+
-  geom_text(data = housing_data_stacked, aes(x = City, y = Monthly_Net_Income_EUR + 150, 
+  geom_text(data = housing_data_sorted, aes(x = City, y = Monthly_Net_Income_EUR + 150, 
                                              label = paste0(round(rent_to_income_ratio * 100, 0), "%")),
             color = "black",
             fontface = "bold",
